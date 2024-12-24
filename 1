@@ -1,0 +1,94 @@
+xquery version "1.0-ml";
+
+declare function local:json-to-xml($json) {
+    for $key in map:keys($json)
+    return
+        let $value := map:get($json, $key)
+        return
+            let $element-name := if (matches($key, '^\d')) 
+                                 then concat("n", $key) 
+                                 else $key
+            return element { fn:QName("", $element-name) } {
+                if (string(xdmp:type($value)) eq "array") 
+                then local:json-to-xml($value) 
+                else if (string(xdmp:type($value)) eq "object") 
+                then local:json-to-xml($value)
+                else if (exists($value)) 
+                then $value 
+                else ()
+            }
+};
+
+let $json-string := '{
+    "labelResponseOptions": "URL_ONLY",
+    "requestedShipment": {
+        "shipper": {
+            "contact": {
+                "personName": "SHIPPER NAME",
+                "phoneNumber": 1234567890,
+                "companyName": "Shipper Company Name"
+            },
+            "address": {
+                "streetLines": [
+                    "SHIPPER STREET LINE 1"
+                ],
+                "city": "HARRISON",
+                "stateOrProvinceCode": "AR",
+                "postalCode": 72601,
+                "countryCode": "US"
+            }
+        },
+        "recipients": [
+            {
+                "contact": {
+                    "personName": "RECIPIENT NAME",
+                    "phoneNumber": 1234567890,
+                    "companyName": "Recipient Company Name"
+                },
+                "address": {
+                    "streetLines": [
+                        "RECIPIENT STREET LINE 1",
+                        "RECIPIENT STREET LINE 2"
+                    ],
+                    "city": "Collierville",
+                    "stateOrProvinceCode": "TN",
+                    "postalCode": 38017,
+                    "countryCode": "US"
+                }
+            }
+        ],
+        "shipDatestamp": "2023-05-17",
+        "serviceType": "FEDEX_EXPRESS_SAVER",
+        "packagingType": "FEDEX_SMALL_BOX",
+        "pickupType": "USE_SCHEDULED_PICKUP",
+        "blockInsightVisibility": false,
+        "shippingChargesPayment": {
+            "paymentType": "SENDER"
+        },
+        "shipmentSpecialServices": {
+            "specialServiceTypes": [
+                "FEDEX_ONE_RATE"
+            ]
+        },
+        "labelSpecification": {
+            "imageType": "PDF",
+            "labelStockType": "PAPER_85X11_TOP_HALF_LABEL"
+        },
+        "requestedPackageLineItems": [
+            {
+                "declaredValue": {
+                    "amount": 200,
+                    "currency": "USD"
+                }
+            }
+        ]
+    },
+    "accountNumber": {
+        "value": "740561073"
+    }
+}'
+
+let $node := xdmp:from-json-string($json-string)
+return element root {
+    local:json-to-xml($node)
+}
